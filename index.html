@@ -1,0 +1,580 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Color Tile</title>
+<link rel="stylesheet" type="text/css" href="style.css">
+<style>
+    
+</style>
+<script src="js/neb.js"></script>
+<script src="js/nebulas.js"></script>
+<script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.min.js"></script>
+<script src="js/api.js"></script>
+
+<link rel="stylesheet" href="css/style.css">
+
+
+</head>
+<body>
+
+  <main style="position: relative;">
+    <div class="controls">
+     
+  	  <div >
+        <span>Time：</span>
+        <span id="cost-time"  class="cost-time" ></span>
+      </div>
+      <div class="new-game" style="display: none;">New Game</div>
+      <!-- <div class="show-msg">How to Play? <span class="moves"></span> <span></span></div> -->
+    </div>
+     <div id="game-over"></div>
+    <div id="board"></div>
+    <div id="colors"></div>
+
+    <div id="dialog-cnt" style="text-align: center;position: absolute;bottom:110px;width: 100%;height: 1px;"></div>
+    
+  </main>
+
+<script>
+((document) => {
+    // parts of the game board
+    let moves = document.querySelector('.moves')
+    // ?
+    let board = document.querySelector('#board')
+    let colors = document.querySelector('#colors')
+    let gameover = document.querySelector('#game-over')
+
+    // control variables 
+    let colorArray = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j']
+
+    let running = false
+
+    let cell = '-x'
+    let skill = 5
+    let tally = 0
+    let cap = 35
+    let color
+
+
+    let myscore = 0;
+
+    let beginTime = '';
+
+    let isLogin = false;
+
+
+  
+
+  //  game play methods
+  // ----------------------------
+  var mm=0;     //分
+  var ss=0;     //秒
+  var ms=0;     //毫秒
+  var str;
+  renderTime()
+  function renderTime(){
+      str=checkTime(mm)+":"+checkTime(ss)+":"+checkTime(ms)
+      document.getElementById("cost-time").innerHTML=str;
+  }
+  function Count(){
+      ms++;
+      if(ms==100){
+          ms=0;
+          ++ss;
+          if(ss==60){
+              ss=0;
+              ++mm;
+            if(mm==60){
+                mm=0;
+            }
+          }
+      }
+      renderTime()
+  }
+  var hehe;
+  function jishi_start(){
+      hehe=setInterval(Count,10);
+  }
+  function jishi_stop(){
+      clearInterval(hehe);
+  }
+  function checkTime(i){
+  if (i<10) {
+          i="0" + i;
+      }
+    return i;
+  }
+
+
+  let shuffle = (collection) => {
+    for (let i = collection.length; i; i--) {
+      let j = Math.floor(Math.random() * i);
+      [collection[i - 1], collection[j]] = [collection[j], collection[i - 1]]
+    }
+    return collection
+  }
+
+  let setColors = (collection, n) => {
+    return n < 10 ? shuffle(collection).slice(0, n) : collection
+  }
+
+  let checkWin = (moves) => {
+    let n = 0
+    let msg = ''
+    if (moves <= cap  &&  moves>=0) { //胜利
+      console.log(moves)
+      if (board.childNodes[99].className.indexOf(cell) > -1) {
+        for (var i = 0; i < 100; i++) {
+          if (board.childNodes[i].className.indexOf(cell) > -1) {
+            n++
+          }
+        }
+      }
+
+      if (n === 100) { //规定步数完成游戏
+        jishi_stop()
+        webGetNonce()
+        .then((data) =>{
+            config.nonce = parseInt(data.nonce)+1;
+            config.func = "welcomeHero"
+            let costTime = parseInt(mm+''+ss+''+ms)
+            config.args = "["+costTime+"]"
+
+
+            console.log('-----------------查询costtime----------------')
+            console.log(costTime)
+            console.log('-----------------查询costtime----------------')
+
+            
+
+            webTransaction()
+            .then((data) =>{
+                console.log(data)
+            })
+        })
+
+
+
+        jishi_stop()
+        $('#board').children().css('background-color','rgb(52,83,145)')
+
+         let cmpScore = parseInt(mm+''+ss+''+ms)
+          cmpScore = getscore(cmpScore)
+        msg = ` 
+                <div style="text-align:center;margin-bottom:30px;">
+                  <img src="You-Win.png" style="width:50vmin;,margin-bottom:20px;"><br />
+                  <span id="cost-time" class="cost-time" style="font-size:16px;color:#fff" >Time：${cmpScore}</span>
+                </div>
+                <div class="new-game over" >Play Again!</div>
+                <div class="rank over" style="position:absolute;">Rank</div>
+              `
+        running = false
+      } else if (n < 100 && moves >= cap) { //超过步数
+
+        msg = '<span class="new-game">Oops! Try Again...</span>'
+        running = false
+      }
+    }else if(moves === 'login'){
+      msg = `<div id="login">
+                <span id="kaishi">
+                  Unlock the wallet and start the game.
+                </span>
+                <div id="wallet">
+                  <span id="file-text">
+                    Select Wallet
+                  </span>
+                  <input type="file" id="keyfile"  class="keyfile" style="position:absolute;opacity: 0;top:0;left:0;width: 100%;height: 100%;" >
+                </div>
+                <span id="jiami">
+                  Wallet is encrypted. Please enter password.
+                </span>
+                <div id="password" style="background-color:#0C2544;">
+                  <input type="password"  style="height: 45px;width:100%;font-size: 18px;background-color:transparent;color: white;border: 0 none;padding-left:14px;" >
+                </div>
+                <div id="lock">
+                  Login
+                </div>
+            </div>`
+    }else if(moves === 'begin'){
+        msg = `<div id="begin">
+                  <span class="new-game">
+                    New Game
+                  </span>
+                  <span  class="rank">
+                    Rank
+                  </span>
+                   <span class="howtoplay">
+                    How To Play
+                  </span>
+              </div>`
+    }else if(moves === 'rank'){
+        webGetNonce()
+        .then((data) =>{
+            console.log('-----------------查询nonce----------------')
+            console.log(data)
+            console.log('-----------------查询nonce----------------')
+            if(data.balance === '0'){
+              dialog($('#dialog-cnt'),'insufficient balance')
+                var rank = $('.rank')
+                $('.loader').remove()
+              return
+            }
+            config.nonce = parseInt(data.nonce)+1;
+            config.func = "getTopN"
+            config.args = "["+10+"]"
+            console.log('-----------------查询config----------------')
+            console.log(config)
+            console.log('-----------------查询config----------------')
+            webCall()
+            .then((data) =>{
+               console.log('-----------------查询rank----------------')
+               console.log(data)
+               console.log('-----------------查询rank----------------')
+
+              var lists = JSON.parse(data.result)
+              var list = '';
+
+
+              lists.forEach((v,i)=>{
+                    if(i===0){
+                         list +=`<li class="list-wrap"  style="color:#EF4868;">
+                              <span><img style="width:20px;" src="crown-1.png"></span>
+                              <span>${v.hero}</span>
+                              <span>${getscore(v.score)}</span>
+                           </li> `
+                    }
+                    else if(i===1){
+                         list +=`<li class="list-wrap" style="color:#FFA820 ;">
+                              <span><img  style="width:20px;" src="crown-2.png"></span>
+                              <span>${v.hero}</span>
+                              <span>${getscore(v.score)}</span>
+                           </li> `
+                    }
+                    else if(i===2){
+                        list +=`<li class="list-wrap"  style="color:#37AFFA;">
+                              <span><img style="width:20px;" src="crown-3.png"></span>
+                              <span>${v.hero}</span>
+                              <span>${getscore(v.score)}</span>
+                           </li> `
+                    }else{
+                        list +=`<li class="list-wrap">
+                              <span>${i+1}</span>
+                              <span>${v.hero}</span>
+                              <span>${getscore(v.score)}</span>
+                           </li> `
+                    }
+                     
+              })
+
+
+              config.nonce = parseInt(data.nonce)+1;
+              config.func = "getHero"
+              config.args = "[]"
+              webCall()
+              .then((data)=>{
+                  console.log('-----------------查询自己最高分----------------')
+                  console.log(data)
+                  console.log('-----------------查询自己最高分----------------')
+                  let myLastScore = 0;
+                 
+
+                  let curScore = parseInt(mm+''+ss+''+ms)
+
+                  if(data.result === 'null' || data.result === '[]' || !data.result){
+                     myscore = getscore(curScore)
+                  }else{
+                     let result = JSON.parse(data.result);
+                     if(curScore === 0){
+                        myscore = getscore(result.score)
+                        
+                     }
+                     else if(curScore<result.score && curScore !== 0){
+
+                          myscore = getscore(curScore)
+
+                     }else if(curScore>=result.score  && curScore !== 0){
+                          myscore = getscore(result.score)
+                     }
+                    
+
+                  }
+                  // if(data.result === 'null' ){
+                  //     myLastScore = 0
+                  //     result .score = 0
+                  // }else{
+                  //    //result:{score:0}
+
+                  //   myLastScore = getscore(result.score)
+                  // }
+                  // 
+                  // console.log('-----------------当前得分----------------')
+                  // console.log(curScore)
+                  // console.log('-----------------当前得分----------------')
+                  // if(curScore <= result.score  || myLastScore === 0){
+                  //     myscore = getscore(curScore)
+                  // }else{
+                  //     myscore = myLastScore
+                  // }
+
+                    msg = `<div id="rank">
+                              <div style="font-size:28px;color:#00BFDD;text-align:center;margin-bottom:7px;">TOP 10</div>
+                              <div class="list-wrap"><span>#</span><span>address</span><span>time</span></div>
+                              <ul style="padding-left:0;">
+                                ${list}
+                              </ul>
+                          </div>
+                          <div style="color:#EF4868;font-size:22px;margin:20px 0;text-align:center;">
+                           Your Best &nbsp  &nbsp   ${myscore} 
+                          </div>
+                          <div  class="back-to-begin">
+                            <span class="back-to-begin" style="">Exit</span>
+                          </div>
+                          <div style="margin-top:50px;font-size:14px;text-align:center;">An average of 30s is required when uploading historic records to Nebulas</div>
+                          `
+                    gameover.innerHTML = msg
+
+                     $('.loading').remove
+
+              })
+                   
+             
+            })
+        })
+       
+    }else if(moves === 'howtoplay'){
+
+
+
+        msg = `<div id="howtoplay">
+                <div class="how-text" style="font-size: 18px;">
+
+
+                    <div style="color: #FFC300;"  class="how-tit">Log in</div>
+                    <div>
+                        <p>1. Click “New Game”</p>
+                        <p>2. Log in with your wallet address and password, click “Start Game”</p>
+                    </div>
+
+                    <div style=" color: #F46E6E;" class="how-tit">How to play?</div>
+                    <div>
+                        <p>There are different color tiles in the board and 5 colors on the bottom</p>
+                        <p>1. Star from the top-left, we call the first tile A, find the colors around A and click on the same color tile at the bottom</p>
+                        <p>2. When tiles with the same color, they will merge into one</p>
+                        <p>3. Repeat the steps, you will see the same color board get bigger and bigger </p>
+                    </div>
+
+                    <div style=" color: #F46E6E;" class="how-tit">You Win!</div>
+                    <div>
+                        <p>The game is won when the board fills up into one color, congratulations! You did it!</p>
+                    </div>
+
+                    <div style=" color: #00BFDD;" class="how-tit">Ranking List</div>
+                    <div>
+                        <p>1. The ranking list shows the Top 10 player’s game result</p>
+                        <p>2. You can try again to refresh your result and achieve higher-ranking</p>
+                        <p>2. When tiles with the same color, they will merge into one</p>
+                        <p>3. All the related data will be upload into Nebulas, tamper-resistant</p>
+                        <p>4. An average of 30s is required when uploading historic records to Nebulas</p>
+                    </div>
+                </div>
+                <div  class="back-to-begin" style="background-color:#FFC300;margin-top:30px;">
+                  <span class="back-to-begin" style="color: #fff;background-color:#FFC300;">back</span>
+                </div>
+              </div>`
+    }
+    
+    if(!running  && moves != 'rank') {
+      gameover.innerHTML = msg
+    }
+  }
+  
+  
+  let showMsg = (moves) => {
+    let n = 0
+    let msg = ''
+  	
+  	msg ='<b>怎么进入游戏界面？</b><span>1. 默认进入网页就是一个新的游戏开始界面.2. 或者点击左上角的New Game开始新的游戏</span>'
+  	        running = false
+
+  	if(!running) {
+        gameover.innerHTML = msg
+      }
+  	running = false
+}
+
+  let checkColor = (color) => {
+    let tiles = board.childNodes
+    for(var x = 0; x < 100; x++) {
+      if(tiles[x].className.indexOf(cell) > -1) {
+        tiles[x].className = color + cell
+        if (x + 1 < 100 && tiles[x + 1].className === color) {
+          tiles[x + 1].className += cell
+        }
+        if (x + 10 < 100 && tiles[x + 10].className === color) {
+          tiles[x + 10].className += cell
+        }
+        if (x - 1 >= 0 && x % 10 > 0 && tiles[x - 1].className === color) {
+          tiles[x - 1].className += cell
+        }
+        if (x - 10 >= 0 && x % 10 > 0 && tiles[x - 10].className === color) {
+          tiles[x - 10].className += cell
+        }
+      }
+    }
+  }
+
+  let builder = (container, element, collection, count, randomize) => {
+    container.innerHTML = ''
+    count = count || collection.length
+    randomize = randomize || false
+    for (let i = 0; i < count; i++) {
+      let child = document.createElement(element)
+      child.className = randomize ? collection[Math.floor((Math.random() * collection.length))] : collection[i]
+      container.appendChild(child)
+    }
+  }
+
+  let newGame = () => { //重新开始游戏
+
+    mm=0;     //分
+    ss=0;     //秒
+    ms=0;     //毫秒
+    jishi_stop()
+    jishi_start()
+
+
+
+    let options = setColors(colorArray.slice(), skill)
+    tally = 0
+    //moves.innerText = tally
+    //?
+    gameover.innerHTML = ''
+    running = true
+    builder(colors, 'chip', options)
+    builder(board, 'tile', options, 100, true)
+    color = board.childNodes[0].className
+    board.className = ''
+    board.childNodes[0].className = color + cell
+    checkColor(color)
+  }
+
+  let play = (chip) => {  //
+    if (running && color !== chip){
+      color = chip
+      if(board.className !== 'started') {
+        board.className = 'started'
+
+      }
+      tally++
+      //?
+      checkColor(chip)
+      checkWin(tally)
+    }
+  }
+
+
+
+
+
+
+  document.addEventListener("DOMContentLoaded", () => {
+    // newGame()
+  }, false)
+
+  document.addEventListener('click', (event) => {
+
+    let css = Array.from(event.target.classList)
+    if(event.target.tagName === 'CHIP') {
+      play(event.target.className)
+    }
+    else if(css.includes('new-game')) {
+        newGame()
+    }
+    else if(css.includes('rank')){
+      
+      var rank = $('.rank')
+      loading(rank)
+      checkWin('rank')
+    }
+    else if(css.includes('back-to-begin')){
+      
+      checkWin('begin')
+  
+    }
+    else if(css.includes('howtoplay')){
+      checkWin('howtoplay')
+    }
+  })
+
+
+
+
+checkWin('login')//游戏未开始
+
+
+$('#keyfile').change(function(e){
+  getKeyFile(this,e)
+  .then((data) => {
+     $('#file-text').text(data.keyfile.address)
+  })
+})
+
+
+
+$('#lock').click(()=>{
+ 
+   if(!isClick){
+    return
+  }
+  isClick = false
+ 
+ 
+  let password = $('#password').find('input').val()
+  if(!password){
+    dialog($('#dialog-cnt'),'password required')
+    return
+  }
+  validateWallet(keyfile,password)
+  .then((data)=>{
+   
+    if(data.ret !=0){
+      dialog($('#dialog-cnt'),data.msg)
+      return
+    }
+    checkWin('begin')
+    isLogin = true
+    $('.new-game').show()
+
+  })
+})
+
+function getscore(str){ //将链上返回的时间用字符串显示
+  var str = str.toString()
+   switch (str.length) {
+      case 6 :
+        return str.slice(0,2)+':'+str.slice(2,4)+':'+str.slice(4,6);
+        break
+      case 5 :
+        return '0'+str.slice(0,1)+':'+str.slice(1,3)+':'+str.slice(3,5);
+        break
+      case 4 :
+        return '00'+':'+str.slice(0,2)+':'+str.slice(2,4)
+        break
+      case 3 :
+        return '00'+':'+'0'+str.slice(0,1)+':'+str.slice(1,3)
+        break
+      case 2:
+        return '00'+':'+'00'+':'+str.slice(0,2)
+        break
+      case 1:
+        return '00'+':'+'00'+':'+'00'
+        break
+
+   }
+}
+
+})(document)</script>
+
+</body>
+</html>
