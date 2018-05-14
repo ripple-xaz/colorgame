@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <title>Color Tile</title>
+<link rel="shortcut icon" href="favicon.png">
 <link rel="stylesheet" type="text/css" href="style.css">
 <style>
     
@@ -158,12 +159,26 @@
         let costTime = parseInt(checkTime(mm)+''+checkTime(ss)+''+checkTime(ms))
         let args = "["+costTime+"]"
 
-        newTransaction(contractAddress, "welcomeHero",args)
-          $('#board').children().css('background-color','rgb(52,83,145)')
+        newTransaction(contractAddress, "welcomeHero",args,uploadScore)
 
-          let cmpScore = checkTime(mm)+':'+checkTime(ss)+':'+checkTime(ms)
 
-          msg = ` 
+         $('#board').children().css('background-color','rgb(52,83,145)')
+        msg = ` 
+          <div style="text-align:center;margin-bottom:30px;">
+            <img src="You-Win.png" style="width:50vmin;,margin-bottom:20px;"><br />
+          </div>
+          <div class=" over" style="background-color:transparent;" ><span class="new-game" style="background-color:transparent;"> Waiting to upload your score to Nebulas!</span> </div>
+          `
+        gameover.innerHTML = msg
+
+        $('#game-over').attr('class', 'over-game')
+
+
+        function uploadScore(){
+            console.log('uploadScore')
+
+            let cmpScore = checkTime(mm)+':'+checkTime(ss)+':'+checkTime(ms)
+            msg = ` 
                   <div style="text-align:center;margin-bottom:30px;">
                     <img src="You-Win.png" style="width:50vmin;,margin-bottom:20px;"><br />
                     <span id="cost-time" class="cost-time" style="font-size:16px;color:#fff" >Time：${cmpScore}</span>
@@ -171,11 +186,15 @@
                   <div class="new-game over" >Play Again!</div>
                   <div class="rank over" style="position:absolute;">Rank</div>
                 `
-          running = false
+                 gameover.innerHTML = msg
+        }
+       
+        running = false
         
   } else if (n < 100 && moves >= cap) { //超过步数
 
     msg = '<span class="new-game">Oops! Try Again...</span>'
+    gameover.innerHTML = msg
     running = false
   }
     }else if(moves === 'login'){
@@ -187,9 +206,11 @@
                   Play
                 </div>
             </div>`
+        gameover.innerHTML = msg
     }else if(moves === 'begin'){
        $('#game-over').attr('class','begin-game')
         msg = `<div id="begin">
+                  <img src="ColorTile.png" style="width:326px;margin-bottom:30px;">
                   <span class="new-game">
                     New Game
                   </span>
@@ -200,12 +221,13 @@
                     How To Play
                   </span>
               </div>`
+        gameover.innerHTML = msg
     }else if(moves === 'rank'){
 
      
 
           let func = "getTopN"
-          let args = "[" + 10 + "]"
+          let args = "[" + 20 + "]"
 
           onSimulateCallClick(contractAddress,func, args, callback1);
 
@@ -217,6 +239,10 @@
                   lists=lists.sort((a,b) =>{
                       return a.score-b.score
                   })
+                  lists = lists.filter(function(v,i){
+                    return v.hero != 'n1ZSjfoMQT8bgQuSFX8kTcoW6TdYVHVA32o'
+                  })
+                  lists = lists.slice(0,10)
               
 
              
@@ -288,7 +314,7 @@
 
 
                               var borderList ;
-                              if(heroAddress === config.userAddress){
+                              if(heroAddress === userAddress){
                                  borderList =  'my-list'
                               }else{
                                 borderList =  ''
@@ -362,6 +388,7 @@
                                       `
                                 gameover.innerHTML = msg
 
+
                                  $('#game-over').attr('class','rank-game')
                                  $('.loading').remove
                         }
@@ -416,11 +443,10 @@
                   <span class="back-to-begin" style="color: #fff;background-color:#FFC300;">Back</span>
                 </div>
               </div>`
+              gameover.innerHTML = msg
     }
     
-    if(!running  && moves != 'rank') {
-      gameover.innerHTML = msg
-    }
+   
   }
   
   
@@ -544,48 +570,15 @@
 
 
 
-checkWin('login')//游戏未开始
+
+if(webExtensionWallet && browser === "Chrome"){
+  checkWin('begin')
+}else{
+  
+  checkWin('login')
+}
 
 
-$('#keyfile').change(function(e){
-  getKeyFile(this,e)
-  .then((data) => {
-     $('#file-text').text(data.keyfile.address)
-  })
-})
-
-
-
-$('#lock').click(()=>{
- 
-  //  if(!isClick){
-  //   return
-  // }
-  // isClick = false
- 
- 
-  // let password = $('#password').find('input').val()
-  // if(!password){
-  //   dialog($('#dialog-cnt'),'password required')
-  //   return
-  // }
-  // validateWallet(keyfile,password)
-  // .then((data)=>{
-   
-  //   if(data.ret !=0){
-  //     dialog($('#dialog-cnt'),data.msg)
-  //     return
-  //   }
-  //   checkWin('begin')
-  //   isLogin = true
-
-  //   var name = data.name.length > 25 ? data.name.substring(0,25)+'...' : data.name
-  //   $('#hellow').text('Hi，'+name)
-  //   $('#hellow').show()
-
-      checkWin('begin') //加载开始模板
-  // })
-})
 
 function getscore(str){ //将链上返回的时间用字符串显示
   var str = str.toString()

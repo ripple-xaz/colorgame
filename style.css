@@ -346,18 +346,18 @@ line-height: 60px;
 border-radius: 10px;
 color: #fff;
 font-size: 30px;
-margin-bottom: 30px;
+margin-bottom: 7px;
 cursor: pointer;
 }
-#begin>span:nth-child(1){
+#begin>span:nth-child(2){
 background: #F46E6E;
 pointer-events: auto;
 }
-#begin>span:nth-child(2){
+#begin>span:nth-child(3){
 background: #00BFDD;
 pointer-events: auto;
 }
-#begin>span:nth-child(3){
+#begin>span:nth-child(4){
 background: #FFC300;
 pointer-events: auto;
 }
